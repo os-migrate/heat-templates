@@ -1,0 +1,13 @@
+parameter_defaults:
+  StandaloneImage: RHEL-8.4.0-x86_64-ga-latest
+  CloudUser: cloud-user
+  ContainerImagePrepareFile: deploy-templates/container-image-prepare-osp16.yaml
+  EnvironmentName: osp16
+  TripleOClientName: python3-tripleoclient
+  OSPRelease: 16.2
+  Puddle: latest-RHOS-16.2-RHEL-8
+  PackageManagerName: dnf
+
+resource_registry:
+  OS::OSPHeatTemplates::RepoConfig: osp-repo-config.yaml
+  OS::OSPHeatTemplates::StandaloneConfig: standalone-config-16.yaml

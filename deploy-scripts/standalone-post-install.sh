@@ -1,5 +1,4 @@
 #!/bin/bash
-
 GATEWAY=192.168.24.1
 STANDALONE_HOST=192.168.24.2
 PUBLIC_NETWORK_CIDR=192.168.24.0/24
@@ -37,7 +36,8 @@ openstack subnet create public-net \
     --no-dhcp \
     --gateway $GATEWAY \
     --allocation-pool start=$PUBLIC_NET_START,end=$PUBLIC_NET_END \
-    --network public
+    --network public \
+    --dns-nameserver $DNS_SERVER
 
 # Only for ping and debug tests
 if [ "$PING_TEST" = true ]; then

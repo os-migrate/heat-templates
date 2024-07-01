@@ -6,6 +6,7 @@ ENVIRONMENT_NAME=${ENVIRONMENT_NAME:-"osp17"}
 STACK_NAME=${STACK_NAME:-"osp17"}
 SCRIPT_DIR=$(realpath $(dirname $0))
 SSH_KEY=${SSH_KEY:-"$HOME/.ssh/${STACK_NAME}"}
+DEPLOY_TYPE=${DEPLOY_TYPE:-"tripleo"}
 
 if [ -z "$ENVIRONMENT_NAME" ]; then
     echo "Must provide release as first positional argument"
@@ -16,8 +17,11 @@ fi
 if [ ! -f ${SSH_KEY} ]; then
     ssh-keygen -N '' -f ${SSH_KEY}
 fi
-
-openstack stack create ${STACK_NAME} -t ${SCRIPT_DIR}/tripleo.yaml --wait \
+if [ "$DEPLOY_TYPE" = "standalone" ]; then
+    ENVIRONMENT_NAME="${ENVIRONMENT_NAME}-standalone"
+fi
+echo $ENVIRONMENT_NAME
+openstack stack create ${STACK_NAME} -t ${SCRIPT_DIR}/${DEPLOY_TYPE}.yaml --wait \
     --parameter-file PrivateKeyContents=${SSH_KEY} \
     --parameter-file PublicKeyContents=${SSH_KEY}.pub \
     --parameter PublicKey="${SSH_KEY}.pub" \

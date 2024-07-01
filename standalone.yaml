@@ -1,0 +1,237 @@
+heat_template_version: rocky
+
+parameters:
+  StandaloneImage:
+    type: string
+    default: RHEL-8.4.0-x86_64-latest
+  StandaloneUsername:
+    type: string
+    default: stack
+  StandaloneFlavor:
+    type: string
+    default: ci.standard.xl
+  KeyName:
+    type: string
+    default: adrbrown
+  FloatingNetwork:
+    type: string
+    default: provider_net_shared_3
+  PrivateKeyContents:
+    type: string
+    description: |
+      SSH private key absolute file path used to connect to the created
+      servers.  The private key is needed so that the Standalone can SSH to the
+      overcloud nodes. Do not use a key that should be otherwise protected.
+  PublicKey:
+    type: string
+    description: |
+      SSH public key absolute file path used to connect to the created servers.
+  PublicKeyContents:
+    type: string
+    description: |
+      SSH public key contents used to connect to the created servers.
+  ContainerImagePrepareFile:
+    type: string
+    default: deploy-templates/container-image-prepare-osp17.yaml
+  EnvironmentName:
+    type: string
+    default: osp17
+  TripleOClientName:
+    type: string
+    default: python3-tripleoclient
+  PackageManagerName:
+    type: string
+    default: dnf
+
+resources:
+
+  KeyPair:
+    type: OS::Nova::KeyPair
+    properties:
+      name:
+        list_join:
+          - '-'
+          - - {get_param: OS::stack_name}
+            - keypair
+      public_key: {get_param: PublicKeyContents}
+
+  DeployNetwork:
+    type: OS::Neutron::Net
+    properties:
+      name:
+        list_join:
+          - '-'
+          - - {get_param: OS::stack_name}
+            - deploy
+      port_security_enabled: false
+
+  ManagementNetwork:
+    type: OS::Neutron::Net
+    properties:
+      name:
+        list_join:
+          - '-'
+          - - {get_param: OS::stack_name}
+            - management
+      port_security_enabled: false
+
+  DeploySubnet:
+    type: OS::Neutron::Subnet
+    properties:
+      network: {get_resource: DeployNetwork}
+      allocation_pools:
+        - start: 192.168.24.1
+          end: 192.168.24.200
+      cidr: 192.168.24.0/24
+      enable_dhcp: false
+      gateway_ip: null
+
+
+  ManagementSubnet:
+    type: OS::Neutron::Subnet
+    properties:
+      network: {get_resource: ManagementNetwork}
+      allocation_pools:
+        - start: 10.98.0.2
+          end: 10.98.0.200
+      enable_dhcp: true
+      cidr: 10.98.0.0/24
+
+  FloatingRouter:
+    type: OS::Neutron::Router
+    properties:
+      external_gateway_info:
+        network: {get_param: FloatingNetwork}
+      name:
+        list_join:
+          - '-'
+          - - {get_param: OS::stack_name}
+            - router
+
+  FloatingRouterInterface:
+    type: OS::Neutron::RouterInterface
+    properties:
+      router: {get_resource: FloatingRouter}
+      subnet: {get_resource: ManagementSubnet}
+
+  Standalone:
+    type: OS::Nova::Server
+    properties:
+      flavor: {get_param: StandaloneFlavor}
+      key_name: {get_resource: KeyPair}
+      name:
+        str_replace:
+          template: STACK_NAME-Standalone
+          params:
+            STACK_NAME: {get_param: OS::stack_name}
+      image: {get_param: StandaloneImage}
+      networks:
+        - port: {get_resource: ManagementPort}
+        - port: {get_resource: DeployPort}
+      user_data: {get_resource: StandaloneUserData}
+      user_data_format: RAW
+
+  StandaloneServerUserData:
+    type: server-user-data.yaml
+
+  StandaloneTripleOClientConfig:
+    type: OS::Heat::SoftwareConfig
+    properties:
+      config:
+        str_replace:
+          template: |
+            #!/usr/bin/bash
+            if rpm -q TRIPLEOCLIENT_NAME; then
+              sudo PACKAGE_MANAGER_NAME -y update TRIPLEOCLIENT_NAME
+            else
+              sudo PACKAGE_MANAGER_NAME -y install TRIPLEOCLIENT_NAME
+            fi
+            # Needed so the standalone install doesn't fail fqdn validation
+            sudo hostnamectl set-hostname standalone-osp16.localdomain
+            sudo hostnamectl set-hostname standalone-osp16.localdomain --transient
+          params:
+            STACK_NAME: {get_param: OS::stack_name}
+            TRIPLEOCLIENT_NAME: {get_param: TripleOClientName}
+            PACKAGE_MANAGER_NAME: {get_param: PackageManagerName}
+
+  ContainerImagePrepareFiles:
+    type: OS::Heat::Value
+    properties:
+      value:
+        osp13: {get_file: deploy-templates/container-image-prepare-osp13.yaml}
+        osp16: {get_file: deploy-templates/container-image-prepare-osp16.yaml}
+        osp17: {get_file: deploy-templates/container-image-prepare-osp17.yaml}
+        osp17.1: {get_file: deploy-templates/container-image-prepare-osp17.yaml}
+        master: {get_file: deploy-templates/container-image-prepare-master.yaml}
+
+  StandaloneConfig:
+    type: OS::OSPHeatTemplates::StandaloneConfig
+    properties:
+      EnvironmentName: {get_param: EnvironmentName}
+      PublicKeyContents: {get_param: PublicKeyContents}
+      PrivateKeyContents: {get_param: PrivateKeyContents}
+      ContainerImagePrepareFiles: {get_attr: [ContainerImagePrepareFiles, value]}
+
+  StandaloneUserData:
+    type: OS::Heat::MultipartMime
+    properties:
+      parts:
+        list_concat:
+          - {get_attr: [StandaloneServerUserData, ServerUserData]}
+          - - config: {get_resource: StandaloneTripleOClientConfig}
+              subtype: x-shellscript
+            - config: {get_resource: StandaloneConfig}
+
+  ManagementPort:
+    type: OS::Neutron::Port
+    properties:
+      network: {get_resource: ManagementNetwork}
+      fixed_ips:
+        - ip_address: 10.98.0.5
+          subnet: {get_resource: ManagementSubnet}
+
+  DeployPort:
+    type: OS::Neutron::Port
+    properties:
+      network: {get_resource: DeployNetwork}
+      fixed_ips:
+        - ip_address: 192.168.24.1
+          subnet: {get_resource: DeploySubnet}
+
+
+  # Not actually associated with the Standalone server, resource is just here to
+  # reserve the IP so the Standalone install can use it.
+  UndercloudAdminVip:
+    type: OS::Neutron::Port
+    properties:
+      network: {get_resource: DeployNetwork}
+      fixed_ips:
+        - ip_address: 192.168.24.3
+          subnet: {get_resource: DeploySubnet}
+
+  # Not actually associated with the Undercloud server, resource is just here to
+  # reserve the IP so the undercloud install can use it.
+  UndercloudPublicVip:
+    type: OS::Neutron::Port
+    properties:
+      network: {get_resource: DeployNetwork}
+      fixed_ips:
+        - ip_address: 192.168.24.2
+          subnet: {get_resource: DeploySubnet}
+
+  UndercloudFloatingIP:
+    type: OS::Neutron::FloatingIP
+    properties:
+      floating_network: {get_param: FloatingNetwork}
+
+  UndercloudFloatingIpAssociation:
+    type: OS::Neutron::FloatingIPAssociation
+    depends_on: FloatingRouterInterface
+    properties:
+      floatingip_id: {get_resource: UndercloudFloatingIP}
+      port_id: {get_resource: ManagementPort}
+
+outputs:
+  UndercloudFloatingIP:
+    description: UndercloudFloatingIP
+    value: {get_attr: [UndercloudFloatingIP, floating_ip_address]}

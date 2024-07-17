@@ -15,7 +15,7 @@ parameters:
     default: adrbrown
   FloatingNetwork:
     type: string
-    default: provider_net_shared_3
+    default: shared_net_2
   PrivateKeyContents:
     type: string
     description: |
@@ -84,8 +84,7 @@ resources:
           end: 192.168.24.200
       cidr: 192.168.24.0/24
       enable_dhcp: false
-      gateway_ip: null
-
+      gateway_ip: 192.168.24.254
 
   ManagementSubnet:
     type: OS::Neutron::Subnet
@@ -113,6 +112,12 @@ resources:
     properties:
       router: {get_resource: FloatingRouter}
       subnet: {get_resource: ManagementSubnet}
+
+  DeployRouterInterface:
+    type: OS::Neutron::RouterInterface
+    properties:
+      router: {get_resource: FloatingRouter}
+      subnet: {get_resource: DeploySubnet}
 
   Standalone:
     type: OS::Nova::Server

@@ -18,7 +18,7 @@ curl -O https://cloud.centos.org/centos/9-stream/x86_64/images/CentOS-Stream-Gen
 openstack image create CentOS-Stream-GenericCloud-9-latest  --container-format bare --disk-format qcow2 --public --file CentOS-Stream-GenericCloud-9-latest.x86_64.qcow2
 
 # Keypair
-yes | ssh-keygen
+ssh-keygen -t rsa -b 4096 -N "" -f ~/.ssh/id_rsa
 openstack keypair create --public-key ~/.ssh/id_rsa.pub default
 
 # create basic security group to allow ssh/ping/dns

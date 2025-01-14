@@ -43,7 +43,7 @@ parameter_defaults:
 EOF
 
 
-sudo bash -c 'cat <<EOF > /usr/share/ansible/roles/tripleo-podman/defaults/main.yml
+sudo bash -c 'cat <<EOF > /usr/share/ansible/roles/tripleo_podman/defaults/main.yml
 ---
 tripleo_container_registry_insecure_registries: []
 tripleo_container_registry_login: false

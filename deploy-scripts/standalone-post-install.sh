@@ -1,10 +1,10 @@
 #!/bin/bash
-GATEWAY=192.168.24.2
-STANDALONE_HOST=192.168.24.2
-PUBLIC_NETWORK_CIDR=192.168.24.0/24
+GATEWAY=192.168.25.2
+STANDALONE_HOST=192.168.25.2
+PUBLIC_NETWORK_CIDR=192.168.25.0/24
 PRIVATE_NETWORK_CIDR=192.168.100.0/24
-PUBLIC_NET_START=192.168.24.40
-PUBLIC_NET_END=192.168.24.150
+PUBLIC_NET_START=192.168.25.40
+PUBLIC_NET_END=192.168.25.150
 DNS_SERVER=10.11.5.19
 PING_TEST=${PING_TEST:-false}
 
@@ -14,8 +14,8 @@ export OS_CLOUD=standalone
 openstack flavor create --ram 2048 --disk 15 --vcpu 2 --public m1.medium
 
 # CentOS Image
-curl -O https://cloud.centos.org/centos/9-stream/x86_64/images/CentOS-Stream-GenericCloud-9-latest.x86_64.qcow2
-openstack image create CentOS-Stream-GenericCloud-9-latest  --container-format bare --disk-format qcow2 --public --file CentOS-Stream-GenericCloud-9-latest.x86_64.qcow2
+curl -O https://cloud.centos.org/centos/10-stream/x86_64/images/CentOS-Stream-GenericCloud-10-latest.x86_64.qcow2
+openstack image create CentOS-Stream-GenericCloud-10-latest  --container-format bare --disk-format qcow2 --public --file CentOS-Stream-GenericCloud-10-latest.x86_64.qcow2
 
 # Keypair
 ssh-keygen -t rsa -b 4096 -N "" -f ~/.ssh/id_rsa
@@ -50,7 +50,7 @@ if [ "$PING_TEST" = true ]; then
     openstack router set vrouter --external-gateway public
     openstack router add subnet vrouter private-net
     openstack floating ip create public
-    openstack server create --flavor m1.medium --image CentOS-Stream-GenericCloud-9-latest  --key-name default --network private --security-group basic test
+    openstack server create --flavor m1.medium --image CentOS-Stream-GenericCloud-10-latest  --key-name default --network private --security-group basic test
     FLOATING_IP=$(openstack floating ip list -c "Floating IP Address" -f value)
     echo "Floating IP: $FLOATING_IP"
     echo "now add floating ip with: openstack server add floating ip test <floating-ip>"

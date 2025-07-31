@@ -3,7 +3,7 @@ heat_template_version: rocky
 parameters:
   StandaloneImage:
     type: string
-    default: RHEL-8.4.0-x86_64-latest
+    default: RHEL-9.2.0-x86_64-latest
   StandaloneUsername:
     type: string
     default: stack
@@ -12,10 +12,10 @@ parameters:
     default: ci.standard.xl
   KeyName:
     type: string
-    default: adrbrown
+    default: standalone-17
   FloatingNetwork:
     type: string
-    default: shared_net_2
+    default: provider_net_shared_2
   PrivateKeyContents:
     type: string
     description: |
@@ -32,7 +32,7 @@ parameters:
       SSH public key contents used to connect to the created servers.
   ContainerImagePrepareFile:
     type: string
-    default: deploy-templates/container-image-prepare-osp17.yaml
+    default: deploy-templates/container-image-prepare-osp17.1.yaml
   EnvironmentName:
     type: string
     default: osp17
@@ -80,21 +80,21 @@ resources:
     properties:
       network: {get_resource: DeployNetwork}
       allocation_pools:
-        - start: 192.168.24.1
-          end: 192.168.24.200
-      cidr: 192.168.24.0/24
+        - start: 192.168.25.1
+          end: 192.168.25.200
+      cidr: 192.168.25.0/24
       enable_dhcp: false
-      gateway_ip: 192.168.24.254
+      gateway_ip: 192.168.25.254
 
   ManagementSubnet:
     type: OS::Neutron::Subnet
     properties:
       network: {get_resource: ManagementNetwork}
       allocation_pools:
-        - start: 10.98.0.2
-          end: 10.98.0.200
+        - start: 10.98.1.2
+          end: 10.98.1.200
       enable_dhcp: true
-      cidr: 10.98.0.0/24
+      cidr: 10.98.1.0/24
 
   FloatingRouter:
     type: OS::Neutron::Router
@@ -152,8 +152,8 @@ resources:
               sudo PACKAGE_MANAGER_NAME -y install TRIPLEOCLIENT_NAME
             fi
             # Needed so the standalone install doesn't fail fqdn validation
-            sudo hostnamectl set-hostname standalone-osp16.localdomain
-            sudo hostnamectl set-hostname standalone-osp16.localdomain --transient
+            sudo hostnamectl set-hostname standalone-osp17.localdomain
+            sudo hostnamectl set-hostname standalone-osp17.localdomain --transient
           params:
             STACK_NAME: {get_param: OS::stack_name}
             TRIPLEOCLIENT_NAME: {get_param: TripleOClientName}
@@ -166,7 +166,7 @@ resources:
         osp13: {get_file: deploy-templates/container-image-prepare-osp13.yaml}
         osp16: {get_file: deploy-templates/container-image-prepare-osp16.yaml}
         osp17: {get_file: deploy-templates/container-image-prepare-osp17.yaml}
-        osp17.1: {get_file: deploy-templates/container-image-prepare-osp17.yaml}
+        osp17.1: {get_file: deploy-templates/container-image-prepare-osp17.1.yaml}
         master: {get_file: deploy-templates/container-image-prepare-master.yaml}
 
   StandaloneConfig:
@@ -192,7 +192,7 @@ resources:
     properties:
       network: {get_resource: ManagementNetwork}
       fixed_ips:
-        - ip_address: 10.98.0.5
+        - ip_address: 10.98.1.5
           subnet: {get_resource: ManagementSubnet}
 
   DeployPort:
@@ -200,7 +200,7 @@ resources:
     properties:
       network: {get_resource: DeployNetwork}
       fixed_ips:
-        - ip_address: 192.168.24.1
+        - ip_address: 192.168.25.1
           subnet: {get_resource: DeploySubnet}
 
 
@@ -211,7 +211,7 @@ resources:
     properties:
       network: {get_resource: DeployNetwork}
       fixed_ips:
-        - ip_address: 192.168.24.3
+        - ip_address: 192.168.25.3
           subnet: {get_resource: DeploySubnet}
 
   # Not actually associated with the Undercloud server, resource is just here to
@@ -221,7 +221,7 @@ resources:
     properties:
       network: {get_resource: DeployNetwork}
       fixed_ips:
-        - ip_address: 192.168.24.2
+        - ip_address: 192.168.25.2
           subnet: {get_resource: DeploySubnet}
 
   UndercloudFloatingIP:

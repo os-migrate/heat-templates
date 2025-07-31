@@ -8,23 +8,24 @@ date
 
 cat <<EOF > /home/stack/standalone_parameters.yaml
 parameter_defaults:
-  CloudName: 192.168.24.2
+  CloudName: 192.168.25.2
   # default gateway
   KernelIpNonLocalBind: 1
   ControlPlaneStaticRoutes:
     - ip_netmask: 0.0.0.0/0
-      next_hop: 10.98.0.1
+      next_hop: 10.98.1.1
       default: true
   Debug: true
   DeploymentUser: stack
   DnsServers:
     - 10.11.5.19
     - 10.5.30.160
-  NtpServer: clock.corp.redhat.com
+  NtpServer:
+    - clock.corp.redhat.com
   # needed for vip & pacemaker
   KernelIpNonLocalBind: 1
   DockerInsecureRegistryAddress:
-    - 192.168.24.2:8787
+    - 192.168.25.2:8787
   NeutronPublicInterface: eth1
   # domain name used by the host
   CloudDomain: localdomain
@@ -53,6 +54,7 @@ tripleo_podman_packages: "{{ _tripleo_podman_packages | default([]) }}"
 tripleo_buildah_packages: "{{ _tripleo_buildah_packages | default([]) }}"
 tripleo_podman_purge_packages: "{{ _tripleo_podman_purge_packages | default([]) }}"
 tripleo_podman_tls_verify: true
+tripleo_podman_enable_socket: true
 tripleo_podman_debug: false
 tripleo_podman_buildah_login: false
 tripleo_podman_default_network_config:
@@ -96,7 +98,8 @@ EOF'
 time sudo openstack tripleo deploy \
   --standalone \
   --templates \
-  --local-ip=192.168.24.2/24 \
+  --local-ip=192.168.25.2/24 \
+  --control-virtual-ip=192.168.25.3 \
   -e /usr/share/openstack-tripleo-heat-templates/environments/standalone/standalone-tripleo.yaml \
   -r /usr/share/openstack-tripleo-heat-templates/roles/Standalone.yaml \
   -e /home/stack/standalone-images.yaml \

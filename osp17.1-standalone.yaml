@@ -1,0 +1,14 @@
+parameter_defaults:
+  StandaloneImage: RHEL-9.2.0-x86_64-development-latest
+  CloudUser: cloud-user
+  ContainerImagePrepareFile: deploy-templates/container-image-prepare-osp17.1.yaml
+  EnvironmentName: osp17.1
+  TripleOClientName: python3-tripleoclient
+  OSPRelease: 17.1
+  Puddle: latest-RHOS-17.1-RHEL-9
+  PackageManagerName: dnf
+  StandaloneFlavor: ci.standard.xxxl
+
+resource_registry:
+  OS::OSPHeatTemplates::RepoConfig: osp-repo-config.yaml
+  OS::OSPHeatTemplates::StandaloneConfig: standalone-config-17-1.yaml

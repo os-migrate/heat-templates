@@ -4,11 +4,11 @@ parameters:
 
   OSPRelease:
     type: string
-    default: 17
+    default: 17.1
 
   Puddle:
     type: string
-    default: latest-RHOS-16.2-RHEL-8
+    default: latest-RHOS-17.1-RHEL-9
 
   PackageManagerName:
     type: string
